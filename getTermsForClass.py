@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import sys
 import urllib
 import re
@@ -16,7 +18,7 @@ URLS = [
 URL_TO_TERM = { URLS[0]: "Fall Quarter 13-14", URLS[1]: "Winter Quarter 13-14", URLS[2]: "Spring Quarter 13-14", URLS[3]: "Summer Quarter 13-14",
 				URLS[4]: "Fall Quarter 14-15", URLS[5]: "Winter Quarter 14-15", URLS[6]: "Spring Quarter 14-15", URLS[7]: "Summer Quarter 14-15" }
 
-class_name = raw_input("Enter the number for the computer science cousre: ")
+class_name = raw_input("Enter the number for the computer science course: ")
 search_val = ">" + class_name + "<"
 
 print "CS" + class_name + " was or will be offered the following terms:"
