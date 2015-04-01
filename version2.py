@@ -20,15 +20,12 @@ def check_all_terms(driver):
 					quarter = quarter[:-len(" (View only)")]
 				opt.click()
 				driver.find_element_by_xpath("//*[@value='Submit']").click()
-				for handle in driver.window_handles:
-					driver.switch_to_window(handle)
 				check_all_subjects(driver, classes, quarter)
-				print classes
 				driver.back()
 				break
 			
 			if quarter == "Summer Quarter 98-99 (View only)":
-				return
+				return classes
 
 def check_all_subjects(driver, classes, quarter):
 	checked = []
@@ -76,4 +73,10 @@ driver.close()
 for handle in driver.window_handles:
 	driver.switch_to_window(handle)
 
-check_all_terms(driver)
+classes = check_all_terms(driver)
+fout = open("coursedata", "w")
+for course in sorted(classes.keys()):
+	fout.write(course + " | ")
+	for quarter in classes[course]:
+		fout.write(quarter + " | ")
+	fout.write("\n")
