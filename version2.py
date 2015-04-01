@@ -12,9 +12,10 @@ def check_all_terms(driver):
 		dropdown = driver.find_element_by_name("p_term")
 		options = dropdown.find_elements_by_tag_name("option")
 		for opt in options:
-			if opt.text not in checked and opt.text != "None" and str(opt.text).find("Semester") == -1:
-				checked.append(opt.text)
-				quarter = str(opt.text)
+			quarter = str(opt.text)
+			if quarter not in checked and quarter != "None" and quarter.find("Semester") == -1:
+				checked.append(quarter)
+				quarter = quarter
 				if quarter.endswith(" (View only)"):
 					quarter = quarter[:-len(" (View only)")]
 				opt.click()
@@ -25,6 +26,9 @@ def check_all_terms(driver):
 				print classes
 				driver.back()
 				break
+			
+			if quarter == "Summer Quarter 98-99 (View only)":
+				return
 
 def check_all_subjects(driver, classes, quarter):
 	checked = []
@@ -51,7 +55,7 @@ def check_all_subjects(driver, classes, quarter):
 				sub.click()
 				ActionChains(driver).key_up(Keys.CONTROL).perform()
 			
-			if textval == "Animation":#Writing":
+			if textval == "Writing":
 				return
 
 if len(sys.argv) < 3:
