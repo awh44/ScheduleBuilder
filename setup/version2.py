@@ -80,3 +80,4 @@ for course in sorted(classes.keys()):
 	for quarter in classes[course]:
 		fout.write(quarter + " | ")
 	fout.write("\n")
+fout.close()
