@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-STOP_QUARTER = "Spring Quarter 14-15"#"Summer Quarter 98-99"
+STOP_QUARTER = "Summer Quarter 98-99"
 
 def sanitize_quarter(quarter):
 	return quarter[:-len(" (View only)")] if quarter.endswith(" (View only)") else quarter
@@ -82,7 +82,8 @@ def check_all_subjects(driver, quarter, c):
 						courseobj = get_course_obj(c, subj_id, num.text)
 						#If the course hasn't been seen before, make sure to insert it
 						if courseobj == None:
-							c.execute("INSERT INTO courses(subj_id, number) VALUES(?, ?)", (subj_id, num.text))
+							course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
+							c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
 							courseobj = get_course_obj(c, subj_id, num.text)
 
 						course_id = courseobj[0]
