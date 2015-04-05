@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-STOP_QUARTER = "Spring Quarter 14-15"#"Summer Quarter 98-99"
+STOP_QUARTER = "Winter Quarter 14-15"#"Summer Quarter 98-99"
 
 def sanitize_quarter(quarter):
 	return quarter[:-len(" (View only)")] if quarter.endswith(" (View only)") else quarter
