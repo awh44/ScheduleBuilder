@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-STOP_QUARTER = "Winter Quarter 14-15"#"Summer Quarter 98-99"
+STOP_QUARTER = "Spring Quarter 14-15"#"Summer Quarter 98-99"
 
 def sanitize_quarter(quarter):
 	return quarter[:-len(" (View only)")] if quarter.endswith(" (View only)") else quarter
@@ -57,53 +57,47 @@ def check_all_subjects(driver, quarter, c):
 		subjects = driver.find_elements_by_tag_name("option")
 		for sub in subjects:
 			#Get the name of the subject
-			textval = sub.text
+			subj_id = str(sub.get_attribute("value"))
 	
-			if textval not in checked:
+			if subj_id not in checked:
 				#Note that this subject has now been checked
-				checked.append(textval)
+				checked.append(subj_id)
 
-				#Select the subject from the database
-				subobj = c.execute("SELECT subj_id FROM subjects WHERE name = ?", (textval,)).fetchone()
+				#Make sure the subject is in the database, so first select it
+				subobj = c.execute("SELECT * FROM subjects WHERE subj_id = ?", (subj_id,)).fetchone()
 				if subobj == None:
-					#If the subject could not be found in the database, make a note of it - the
-					#the database value will have to be manually changed. Then go to the next sub
-					print "Could not find subject: " + textval
-					continue
+					print "Couldn't find subject", sub.text, ", inserting now."
+					#If the subject could not be found in the database, make sure to insert it
+					c.execute("INSERT INTO subjects(subj_id, name) VALUES(?, ?)", (subj_id, sub.text))
 
 				#However, if it could be found, and the subject has not been checked, continue
 				#by noting that it's been checked, selecting in the multiselect, and clicking
 				sub.click()
 				driver.find_element_by_xpath("//*[@value='Course Search']").click()
 
-				#Go back to the subobj and pull out the subj_id, which is actually the subject
-				#abbreviation, e.g., "CS" or "MATH"
-				subj_id = subobj[0]
-
 				#Pull out all of the course numbers
 				numbers = driver.find_elements_by_class_name("dddefault")
 				for num in numbers:
 					if re.match("[0-9]{3}", str(num.text)) != None:
 						courseobj = get_course_obj(c, subj_id, num.text)
+						#If the course hasn't been seen before, make sure to insert it
 						if courseobj == None:
 							c.execute("INSERT INTO courses(subj_id, number) VALUES(?, ?)", (subj_id, num.text))
 							courseobj = get_course_obj(c, subj_id, num.text)
 
 						course_id = courseobj[0]
 						c.execute("INSERT INTO quarters_for_courses(quarter_id, course_id) VALUES(?, ?)", (quarter_id, course_id))
-						#deptPlusNum = textval + " " + num.text
-						#if deptPlusNum in classes:
-						#	classes[deptPlusNum] += [quarter]
-						#else:
-						#	classes[deptPlusNum] = [quarter]
+				
+				#Go back for the next subject
 				driver.back()
 				break
-			elif checked[len(checked) - 1] == textval:
+			elif checked[len(checked) - 1] == subj_id:
+				#If looking at the previously seen subject, hold control and click it to deselect it
 				ActionChains(driver).key_down(Keys.CONTROL).perform()
 				sub.click()
 				ActionChains(driver).key_up(Keys.CONTROL).perform()
 			
-			if textval == "Writing":
+			if subj_id == "WRIT":
 				return
 
 if len(sys.argv) < 3:
