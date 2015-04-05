@@ -27,6 +27,7 @@
 			{
 				$("#subject_select").on("change", function ()
 					{
+						$("#number_select").empty();
 						var subj_id = ($("#subject_select").val());
 						$.ajax({
 							"type": "POST",
