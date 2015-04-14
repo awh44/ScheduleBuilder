@@ -89,7 +89,7 @@ def check_all_subjects(driver, quarter, c):
 								courseobj = get_course_obj(c, subj_id, num.text)
 
 							course_id = courseobj[0]
-							c.execute("INSERT INTO quarters_for_courses(quarter_id, course_id) VALUES(?, ?)", (quarter_id, course_id))
+							c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
 					
 					#Go back for the next subject
 					driver.back()
@@ -102,6 +102,12 @@ def check_all_subjects(driver, quarter, c):
 			
 				if sub.text == last_sub_text:
 					return
+
+def check_detailed_course_data(driver, num_element, c):
+	form_element = num_element.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']")
+	form_element.submit()
+	print "course_quarter_id =", c.lastrowid
+	
 
 if len(sys.argv) < 3:
 	print "Please include your username and password for one.drexel.edu."
