@@ -54,7 +54,7 @@
 <body>
 	<?php
 		$subject_select = '<select id="subject_select"><option>None</option>';
-		$db = new SQLite3('first.db');
+		$db = new SQLite3('../data/courses.db');
 		$results = $db->query('SELECT subj_id, name FROM subjects ORDER BY name');
 		while ($row = $results->fetchArray())
 		{

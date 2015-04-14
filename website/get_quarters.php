@@ -1,5 +1,5 @@
 <?php
-	$db = new SQLite3('first.db');
+	$db = new SQLite3('../data/courses.db');
 	$statement = $db->prepare('SELECT q.quarter
 	                           FROM quarters q
 	                                LEFT JOIN quarters_for_courses qc ON qc.quarter_id = q.quarter_id
