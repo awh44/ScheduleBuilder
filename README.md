@@ -1,8 +1,17 @@
 ScheduleBuilder
 ===============
 
-This repository is currently conflicted.
+This repository contains code to help with the creation of a master schedule of Drexel University's courses since summer 1998, one which
+will, hopefully, present the information in a more elegant way than Drexel's official schedule. Right now, the main feature of the main
+application is to let students determine which term during the year a course tends to be offered, a useful fact to know when building plans
+of study.
 
-To begin, the repository contains one useful script for computer science students at Drexel to find when a certain class tends to be offered, getTermsForClass.py. This script is useful for building computer science plans of study. This script pings Drexel's term master schedule page every time it is run and works only for classes with the CS designation.
+As for code, first, the repository contains, under the setup/ directory, files which create a sqlite database to house all of the coursee
+information. create\_db.py file simply creates the necessary tables and columns in the database. However, get\_quarters\_for\_courses.py
+actually logs onto Drexel's student website, one.drexel.edu, using selenium and Firefox, where it navigates the pages and directly pulls
+information off the screen, inserting it directly into the sqlite database. The database is stored at data/courses.db. Note that data/
+also contains some other, older iterations of the database at any given time as well.
 
-It also contains a script which is to be used to scrape information from Drexel's more robust (than the term master schedule, that is) Drexel One system, which contains much more information. Please ignore the not-quite-elegance of this script, because it should, hopefully, be a one-off solution. It is nearing completion.
+Finally, the repository contains PHP files that are to be used as a website for inspection into the database. Currently, the main web page,
+as noted above, simply provides dropdowns for that let one determine which quarters a course is generally offered. However, in the future,
+as new iterations of the database are created, hopefully the website's reach will extend to other functionality.
