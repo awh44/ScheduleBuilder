@@ -7,7 +7,8 @@ c = conn.cursor()
 
 c.execute("CREATE TABLE subjects(subj_id TEXT PRIMARY KEY, name TEXT)")
 c.execute('''CREATE TABLE courses(course_id INTEGER PRIMARY KEY,
-                                  subj_id TEXT, number INTEGER,
+                                  subj_id TEXT,
+                                  number INTEGER,
                                   name TEXT,
                                   FOREIGN KEY(subj_id) REFERENCES subjects(subj_id))''')
 c.execute('''CREATE TABLE quarters(quarter_id INTEGER PRIMARY KEY,
