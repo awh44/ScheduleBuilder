@@ -5,7 +5,7 @@
 	<script src="schedule.js"></script>
 </head>
 <body>
-	<select id="subject_select">
+	<select id="subject_select" onchange="subject_select_onchange();">
 		<option>None</option>
 		<?php
 			$db = new SQLite3('../data/courses.db');
