@@ -12,7 +12,7 @@ function go()
 				var quarters = JSON.parse(data);
 				for (var key in quarters)
 				{
-					var new_span = $("<span/>").text(quarters[key]);	
+					var new_span = $("<span/>").text(quarters[key]);
 					$("#quarters").prepend(new_span).prepend("<br/>");
 				}
 			}
