@@ -8,12 +8,7 @@
 	<select id="subject_select" onchange="subject_select_onchange();">
 		<option>None</option>
 		<?php
-			$db = new SQLite3('../data/courses.db');
-			$results = $db->query('SELECT subj_id, name FROM subjects ORDER BY name');
-			while ($row = $results->fetchArray())
-			{
-				echo '<option value="' . $row['subj_id'] . '">' . $row['name'] . '</option>';
-			}
+			echo passthru("./schedule.py");
 		?>
 	</select>
 	<select id="number_select"></select>
