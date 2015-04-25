@@ -154,6 +154,6 @@ driver.close()
 for handle in driver.window_handles:
 	driver.switch_to_window(handle)
 
-conn = sqlite3.connect("../data/courses.db")
+conn = sqlite3.connect("../data/new_courses.db")
 check_all_terms(driver, conn)
 conn.close()

@@ -2,7 +2,7 @@
 
 import sqlite3
 
-conn = sqlite3.connect("../data/courses.db")
+conn = sqlite3.connect("../data/new_courses.db")
 c = conn.cursor()
 
 c.execute("CREATE TABLE subjects(subj_id TEXT PRIMARY KEY, name TEXT)")
