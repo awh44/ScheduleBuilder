@@ -3,8 +3,8 @@
 import sqlite3
 import sys
 
-print "hi"
-conn = sqlite3.connect("../../data/courses.db")
+print "hi", sys.argv[1]
+conn = sqlite3.connect("../data/courses.db")
 print "ho"
 c = conn.cursor()
 print "hum"

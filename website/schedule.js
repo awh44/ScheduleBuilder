@@ -31,6 +31,8 @@ function subject_select_onchange()
 				"success":
 					function (data)
 					{
+						alert(data);
+						/*
 						var numbers = JSON.parse(data);
 						for (var key in numbers)
 						{
@@ -41,6 +43,7 @@ function subject_select_onchange()
 							var new_option = $("<option/>").val(course_id).text(course_number + " " + course_name);
 							$("#number_select").append(new_option);
 						}
+						*/
 					}
 				}
 	       );
