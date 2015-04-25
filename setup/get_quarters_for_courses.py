@@ -23,9 +23,9 @@ def check_all_terms(driver, conn):
 	#Determine all of the quarters which have already been added to the database
 	checked = []
 	c = conn.cursor()
-	quartersobj = c.execute("SELECT quarter FROM quarters")
+	quartersobj = c.execute("SELECT season, year FROM quarters")
 	for quarterobj in quartersobj:
-		checked.append(str(quarterobj[0]))
+		checked.append(str(quarterobj[0]) + " Quarter " + str(quaterobj[1]))
 
 	while True:
 		dropdown = driver.find_element_by_name("p_term")
@@ -33,12 +33,13 @@ def check_all_terms(driver, conn):
 		for opt in options:
 			quarter = sanitize_quarter(str(opt.text))
 			if quarter not in checked and quarter != "None" and quarter.find("Semester") == -1 and quarter.find("Continuing") == -1:
-				c.execute("INSERT INTO quarters(quarter) VALUES(?)", (quarter,))
 				checked.append(quarter)
+				season, _, year = quarter.split()
+				c.execute("INSERT INTO quarters(season, year) VALUES(?, ?)", (season, year))
 				
 				opt.click()
 				driver.find_element_by_xpath("//*[@value='Submit']").click()
-				check_all_subjects(driver, quarter, c)
+				check_all_subjects(driver, c.lastrowid, c)
 				
 				#make sure that all of the subjects worked first, then commit them all at once
 				conn.commit()
@@ -50,8 +51,7 @@ def check_all_terms(driver, conn):
 			if quarter == STOP_QUARTER:
 				return
 
-def check_all_subjects(driver, quarter, c):
-	quarter_id = c.execute("SELECT quarter_id FROM quarters WHERE quarter = ?", (quarter,)).fetchone()[0]
+def check_all_subjects(driver, quarter_id, c):
 	last_sub_text = driver.find_element_by_xpath("//*[local-name()='option'][last()]").text
 	checked = []
 	while True:
@@ -60,8 +60,8 @@ def check_all_subjects(driver, quarter, c):
 			#Get the name of the subject
 			if sub.get_attribute("value") != None:
 				subj_id = str(sub.get_attribute("value"))
-	
-				if subj_id not in checked and sub.text != "":
+				sub_text = sub.text
+				if subj_id not in checked and sub_text != "":
 					#Note that this subject has now been checked
 					checked.append(subj_id)
 
@@ -72,24 +72,25 @@ def check_all_subjects(driver, quarter, c):
 						#If the subject could not be found in the database, make sure to insert it
 						c.execute("INSERT INTO subjects(subj_id, name) VALUES(?, ?)", (subj_id, sub.text))
 
-					#However, if it could be found, continue selecting in the multiselect and clicking
+					#However, once found or inserted, continue selecting in the multiselect and clicking
 					sub.click()
 					driver.find_element_by_xpath("//*[@value='Course Search']").click()
 
 					#Pull out all of the course numbers - however, this class also includes other elements on the page
-					numbers = driver.find_elements_by_class_name("dddefault")
-					for num in numbers:
+					#numbers = driver.find_elements_by_class_name("dddefault")
+					#for num in numbers:
 						#Because the CSS class also includes other elements on the page, make sure the inner text is a course number
-						if re.match("[0-9]{3}", str(num.text)) != None:
-							courseobj = get_course_obj(c, subj_id, num.text)
-							#If the course hasn't been seen before, make sure to insert it
-							if courseobj == None:
-								course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
-								c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
-								courseobj = get_course_obj(c, subj_id, num.text)
+					#	if re.match("[0-9]{3}", str(num.text)) != None:
+					#		courseobj = get_course_obj(c, subj_id, num.text)
+					#		#If the course hasn't been seen before, make sure to insert it
+					#		if courseobj == None:
+					#			course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
+					#			c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
+					#			courseobj = get_course_obj(c, subj_id, num.text)
 
-							course_id = courseobj[0]
-							c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
+					#		course_id = courseobj[0]
+					#		c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
+					#		check_detailed_course_data(driver, num, c.lastrowid, c)
 					
 					#Go back for the next subject
 					driver.back()
@@ -100,13 +101,39 @@ def check_all_subjects(driver, quarter, c):
 					sub.click()
 					ActionChains(driver).key_up(Keys.CONTROL).perform()
 			
-				if sub.text == last_sub_text:
+				if sub_text == last_sub_text:
 					return
 
-def check_detailed_course_data(driver, num_element, c):
+def check_all_courses(driver, subj_id, c):
+	last_num_text = driver.find_element_by_xpath("//*[contains(@class, 'dddefault')][last()]").text
+	checked = []
+	while True:
+		numbers = driver.find_elements_by_class_name("dddefault")
+		for num in numbers:
+			checked.append(num.text)
+			#Because the CSS class also includes other elements on the page, make sure the inner text is a course number
+			if num.text not in checked and re.match("[0-9]{3}", str(num.text)) != None:
+				courseobj = get_course_obj(c, subj_id, num.text)
+				#If the course hasn't been seen before, make sure to insert it
+				if courseobj == None:
+					course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
+					c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
+					courseobj = get_course_obj(c, subj_id, num.text)
+
+				course_id = courseobj[0]
+				c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
+#				driver.back()
+				break
+			
+			if num.text == last_num_text:
+				return
+
+
+def check_detailed_course_data(driver, num_element, course_quarter_id, c):
 	form_element = num_element.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']")
 	form_element.submit()
-	print "course_quarter_id =", c.lastrowid
+	print "course_quarter_id =", course_quarter_id
+	driver.back()
 	
 
 if len(sys.argv) < 3:
