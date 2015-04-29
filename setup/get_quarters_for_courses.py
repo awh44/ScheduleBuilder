@@ -8,14 +8,20 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-STOP_QUARTER = "Summer Quarter 98-99"
+STOP_QUARTER = "Summer Quarter 14-15"
+#STOP_QUARTER = "Summer Quarter 98-99"
+
+def sanitize_string(s, dirty):
+	return s[:-len(dirty)] if s.endswith(dirty) else s	
 
 def sanitize_quarter(quarter):
-	return quarter[:-len(" (View only)")] if quarter.endswith(" (View only)") else quarter
+	return sanitize_string(quarter, " (View only)")
+
+def sanitize_instructor(instructor):
+	return sanitize_string(instructor, " (P)")
 
 def get_course_obj(c, abbrev, number):
-	return c.execute("SELECT course_id FROM courses WHERE subj_id = ? AND number = ?", (abbrev, number)).fetchone()
- 
+	return c.execute("SELECT course_id FROM courses WHERE subj_id = ? AND number = ?", (abbrev, number)).fetchone() 
 
 def check_all_terms(driver, conn):
 	global STOP_QUARTER
@@ -25,7 +31,7 @@ def check_all_terms(driver, conn):
 	c = conn.cursor()
 	quartersobj = c.execute("SELECT season, year FROM quarters")
 	for quarterobj in quartersobj:
-		checked.append(str(quarterobj[0]) + " Quarter " + str(quaterobj[1]))
+		checked.append(str(quarterobj[0]) + " Quarter " + str(quarterobj[1]))
 
 	while True:
 		dropdown = driver.find_element_by_name("p_term")
@@ -52,7 +58,7 @@ def check_all_terms(driver, conn):
 				return
 
 def check_all_subjects(driver, quarter_id, c):
-	last_sub_text = driver.find_element_by_xpath("//*[local-name()='option'][last()]").text
+	last_sub_text = "Anthropology" #driver.find_element_by_xpath("//*[local-name()='option'][last()]").text
 	checked = []
 	while True:
 		subjects = driver.find_elements_by_tag_name("option")
@@ -75,23 +81,8 @@ def check_all_subjects(driver, quarter_id, c):
 					#However, once found or inserted, continue selecting in the multiselect and clicking
 					sub.click()
 					driver.find_element_by_xpath("//*[@value='Course Search']").click()
-
-					#Pull out all of the course numbers - however, this class also includes other elements on the page
-					#numbers = driver.find_elements_by_class_name("dddefault")
-					#for num in numbers:
-						#Because the CSS class also includes other elements on the page, make sure the inner text is a course number
-					#	if re.match("[0-9]{3}", str(num.text)) != None:
-					#		courseobj = get_course_obj(c, subj_id, num.text)
-					#		#If the course hasn't been seen before, make sure to insert it
-					#		if courseobj == None:
-					#			course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
-					#			c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
-					#			courseobj = get_course_obj(c, subj_id, num.text)
-
-					#		course_id = courseobj[0]
-					#		c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
-					#		check_detailed_course_data(driver, num, c.lastrowid, c)
-					
+					check_all_courses(driver, subj_id, quarter_id, c)
+										
 					#Go back for the next subject
 					driver.back()
 					break
@@ -104,15 +95,15 @@ def check_all_subjects(driver, quarter_id, c):
 				if sub_text == last_sub_text:
 					return
 
-def check_all_courses(driver, subj_id, c):
-	last_num_text = driver.find_element_by_xpath("//*[contains(@class, 'dddefault')][last()]").text
+def check_all_courses(driver, subj_id, quarter_id, c):
+	goal = len(driver.find_elements_by_class_name("dddefault")) / 2
 	checked = []
 	while True:
 		numbers = driver.find_elements_by_class_name("dddefault")
 		for num in numbers:
-			checked.append(num.text)
 			#Because the CSS class also includes other elements on the page, make sure the inner text is a course number
-			if num.text not in checked and re.match("[0-9]{3}", str(num.text)) != None:
+			if re.match("[0-9]{3}", str(num.text)) != None and num.text not in checked:
+				checked.append(num.text)
 				courseobj = get_course_obj(c, subj_id, num.text)
 				#If the course hasn't been seen before, make sure to insert it
 				if courseobj == None:
@@ -122,19 +113,34 @@ def check_all_courses(driver, subj_id, c):
 
 				course_id = courseobj[0]
 				c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
-#				driver.back()
+				course_quarter_id = c.lastrowid
+								
+				num.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']//*[local-name()='input' and @name='SUB_BTN']").click()
+				check_detailed_course_data(driver, course_quarter_id, c)
+				driver.back()
+				if len(checked) == goal:
+					return
+
 				break
-			
-			if num.text == last_num_text:
-				return
 
-
-def check_detailed_course_data(driver, num_element, course_quarter_id, c):
-	form_element = num_element.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']")
-	form_element.submit()
-	print "course_quarter_id =", course_quarter_id
-	driver.back()
-	
+def check_detailed_course_data(driver, course_quarter_id, c):
+	table = driver.find_element_by_xpath("//*[local-name()='table' and contains(@class, 'datadisplaytable')]")
+	course_rows = table.find_elements_by_xpath(".//*[local-name()='tr' and ./*[local-name()='td'][2]/*[local-name()='a']]")
+	for row in course_rows:
+		CRN = row.find_element_by_xpath(".//*[local-name()='td'][2]/*[local-name()='a']").text
+		section = row.find_element_by_xpath(".//*[local-name()='td'][5]").text
+		campus = row.find_element_by_xpath(".//*[local-name()='td'][6]").text
+		credits = row.find_element_by_xpath(".//*[local-name()='td'][7]").text
+		days = row.find_element_by_xpath(".//*[local-name()='td'][9]").text
+		full_time = str(row.find_element_by_xpath(".//*[local-name()='td'][10]").text)
+		if full_time != "TBA":
+			start_time, end_time = full_time.split("-")
+		else:
+			start_time = end_time = "TBA"
+		capacity = row.find_element_by_xpath(".//*[local-name()='td'][11]").text
+		taken = row.find_element_by_xpath(".//*[local-name()='td'][12]").text
+		instructor = sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
+		print CRN, section, campus, credits, days, start_time, end_time, capacity, taken, instructor
 
 if len(sys.argv) < 3:
 	print "Please include your username and password for one.drexel.edu."
