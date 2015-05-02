@@ -9,8 +9,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
 DAYS_OF_THE_WEEK = { u"S": 0, u"M": 1, u"T": 2, u"W": 3, u"R": 4, u"F": 5 }
-STOP_QUARTER = "Summer Quarter 14-15"
-#STOP_QUARTER = "Summer Quarter 98-99"
+STOP_QUARTER = "Summer Quarter 98-99"
 
 def sanitize_string(s, dirty):
 	return s[:-len(dirty)] if s.endswith(dirty) else s	
@@ -78,7 +77,7 @@ def check_all_terms(driver, conn):
 				return
 
 def check_all_subjects(driver, quarter_id, c):
-	last_sub_text = "Anthropology" #driver.find_element_by_xpath("//*[local-name()='option'][last()]").text
+	last_sub_text = driver.find_element_by_xpath("//*[local-name()='option'][last()]").text
 	checked = []
 	while True:
 		subjects = driver.find_elements_by_tag_name("option")
