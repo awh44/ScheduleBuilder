@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
+DAYS_OF_THE_WEEK = { u"S": 0, u"M": 1, u"T": 2, u"W": 3, u"R": 4, u"F": 5 }
 STOP_QUARTER = "Summer Quarter 14-15"
 #STOP_QUARTER = "Summer Quarter 98-99"
 
@@ -19,6 +20,25 @@ def sanitize_quarter(quarter):
 
 def sanitize_instructor(instructor):
 	return sanitize_string(instructor, " (P)")
+
+def convert_ampm_24hour(time):
+	if time.find("pm") >= 0:
+		time = sanitize_string(time, " pm")
+		hours, minutes = time.split(":")
+		hoursInt = int(hours)
+		if hoursInt != 12:
+			hoursInt += 12
+			
+		return 60 * hoursInt + int(minutes)
+
+	time = sanitize_string(time, " am")
+	hours, minutes = time.split(":")
+	hoursInt = int(hours)
+	if hoursInt == 12:
+		hoursInt = 0
+	
+	return 60 * hoursInt + int(minutes)
+		
 
 def get_course_obj(c, abbrev, number):
 	return c.execute("SELECT course_id FROM courses WHERE subj_id = ? AND number = ?", (abbrev, number)).fetchone() 
@@ -74,7 +94,7 @@ def check_all_subjects(driver, quarter_id, c):
 					#Make sure the subject is in the database, so first select it
 					subobj = c.execute("SELECT * FROM subjects WHERE subj_id = ?", (subj_id,)).fetchone()
 					if subobj == None:
-						print "Couldn't find subject", sub.text, ", inserting now."
+						print "Couldn't find subject " + sub.text + "; inserting now."
 						#If the subject could not be found in the database, make sure to insert it
 						c.execute("INSERT INTO subjects(subj_id, name) VALUES(?, ?)", (subj_id, sub.text))
 
@@ -116,7 +136,7 @@ def check_all_courses(driver, subj_id, quarter_id, c):
 				course_quarter_id = c.lastrowid
 								
 				num.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']//*[local-name()='input' and @name='SUB_BTN']").click()
-				check_detailed_course_data(driver, course_quarter_id, c)
+				credits = check_detailed_course_data(driver, course_quarter_id, c)
 				driver.back()
 				if len(checked) == goal:
 					return
@@ -124,23 +144,49 @@ def check_all_courses(driver, subj_id, quarter_id, c):
 				break
 
 def check_detailed_course_data(driver, course_quarter_id, c):
+	global DAYS_OF_THE_WEEK
+
 	table = driver.find_element_by_xpath("//*[local-name()='table' and contains(@class, 'datadisplaytable')]")
 	course_rows = table.find_elements_by_xpath(".//*[local-name()='tr' and ./*[local-name()='td'][2]/*[local-name()='a']]")
 	for row in course_rows:
+		instructor = sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
+		c.execute("INSERT INTO instructors(name) VALUES(?)", (instructor,))
+		instructor_id = c.lastrowid
+
 		CRN = row.find_element_by_xpath(".//*[local-name()='td'][2]/*[local-name()='a']").text
 		section = row.find_element_by_xpath(".//*[local-name()='td'][5]").text
 		campus = row.find_element_by_xpath(".//*[local-name()='td'][6]").text
-		credits = row.find_element_by_xpath(".//*[local-name()='td'][7]").text
-		days = row.find_element_by_xpath(".//*[local-name()='td'][9]").text
-		full_time = str(row.find_element_by_xpath(".//*[local-name()='td'][10]").text)
-		if full_time != "TBA":
-			start_time, end_time = full_time.split("-")
-		else:
-			start_time = end_time = "TBA"
 		capacity = row.find_element_by_xpath(".//*[local-name()='td'][11]").text
 		taken = row.find_element_by_xpath(".//*[local-name()='td'][12]").text
-		instructor = sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
-		print CRN, section, campus, credits, days, start_time, end_time, capacity, taken, instructor
+
+		c.execute("INSERT INTO course_instances(course_quarter_id, CRN, section, campus, capacity, taken, instructor_id) VALUES(?, ?, ?, ?, ?, ?, ?)", (course_quarter_id, CRN, section, campus, capacity, taken, instructor_id))
+		instance_id = c.lastrowid
+	
+		day_rows_path = "//*[local-name()='tr' and not(./*[local-name()='td'][2]/*[local-name()='a']) and not(@align)][preceding-sibling::*[local-name()='tr' and contains(., 'NR')][1][contains(., '" + CRN + "')]] | //*[local-name()='tr' and ./*[local-name()='td'][2]/*[local-name()='a' and contains(., '" + CRN + "')]]"
+		day_rows = row.find_elements_by_xpath(day_rows_path)
+		days = { u"S": [], u"M": [], u"T": [], u"W": [], u"R": [], u"F": [] }
+		for day_row in day_rows:
+			days_of_week = day_row.find_element_by_xpath(".//*[local-name()='td'][9]").text.strip()
+			#if days_of_week is u"", it usually means that it's an online class - don't need to know times
+			if days_of_week != u"":
+				dates = row.find_element_by_xpath(".//*[local-name()='td'][21]").text.strip()
+				if dates.find("-") > 0:
+					start_date, end_date = dates.split("-")
+					#Going to assume that instances with the same start and end date are the final.
+					#This does NOT appear to always be the case, but it's the best that can be done
+					#it seems
+					if start_date != end_date:
+						full_time = row.find_element_by_xpath(".//*[local-name()='td'][10]").text.strip()
+						if full_time != "TBA":
+							start_time, end_time = full_time.split("-")
+						else:
+							start_time = end_time = "TBA"
+						for day_of_week in days_of_week:
+							c.execute("INSERT INTO instance_time_map(instance_id, day_id, start, end) VALUES(?, ?, ?, ?)", (instance_id, DAYS_OF_THE_WEEK[day_of_week], convert_ampm_24hour(start_time), convert_ampm_24hour(end_time)))
+				else:
+					print "Could not find start and end dates:", dates
+			
+	return credits
 
 if len(sys.argv) < 3:
 	print "Please include your username and password for one.drexel.edu."
