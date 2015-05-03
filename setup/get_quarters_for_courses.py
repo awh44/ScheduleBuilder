@@ -187,24 +187,29 @@ def check_detailed_course_data(driver, course_quarter_id, c):
 			
 	return credits
 
-if len(sys.argv) < 3:
-	print "Please include your username and password for one.drexel.edu."
-	sys.exit(1)	
+def main():
+	if len(sys.argv) < 3:
+		print "Please include your username and password for one.drexel.edu."
+		sys.exit(1)	
 
+	driver = webdriver.Firefox()
+	driver.get("http://one.drexel.edu")
 
-driver = webdriver.Firefox()
-driver.get("http://one.drexel.edu")
+	driver.find_element_by_name("username").send_keys(sys.argv[1])
+	driver.find_element_by_name("password").send_keys(sys.argv[2])
+	driver.find_element_by_name("submit").click()
 
-driver.find_element_by_name("username").send_keys(sys.argv[1])
-driver.find_element_by_name("password").send_keys(sys.argv[2])
-driver.find_element_by_name("submit").click()
+	driver.find_element_by_xpath("//*[contains(text(),'ACADEMICS')]").find_element_by_xpath("..").click()
+	driver.find_element_by_xpath("//*[contains(text(), 'Check Course Availability')]").click()
+	driver.close()
+	for handle in driver.window_handles:
+		driver.switch_to_window(handle)
 
-driver.find_element_by_xpath("//*[contains(text(),'ACADEMICS')]").find_element_by_xpath("..").click()
-driver.find_element_by_xpath("//*[contains(text(), 'Check Course Availability')]").click()
-driver.close()
-for handle in driver.window_handles:
-	driver.switch_to_window(handle)
+	conn = sqlite3.connect("../data/new_courses.db")
+	check_all_terms(driver, conn)
+	conn.close()
 
-conn = sqlite3.connect("../data/new_courses.db")
-check_all_terms(driver, conn)
-conn.close()
+	sys.exit(0)
+
+if __name__ == "__main__":
+	main()
