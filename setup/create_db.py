@@ -24,11 +24,12 @@ c.execute('''CREATE TABLE course_instances(instance_id INTEGER PRIMARY KEY,
                                            course_quarter_id INTEGER,
                                            CRN INTEGER,
                                            section TEXT,
-                                           campus TEXT,
+                                           campus_id INTEGER,
                                            capacity INTEGER,
                                            taken INTEGER,
                                            instructor_id INTEGER,
                                            FOREIGN KEY(course_quarter_id) REFERENCES course_quarter_map(course_quarter_id),
+                                           FOREIGN KEY(campus_id) REFERENCES campuses(campus_id),
                                            FOREIGN KEY(instructor_id) REFERENCES instructors(instructor_id))''')
 c.execute('''CREATE TABLE instructors(instructor_id INTEGER PRIMARY KEY,
                                       name TEXT)''')
@@ -49,6 +50,12 @@ c.execute('''CREATE TABLE instance_time_map(instance_time_id INTEGER PRIMARY KEY
                                             end INTEGER,
                                             FOREIGN KEY(instance_id) REFERENCES course_instances(instance_id),
                                             FOREIGN KEY(day_id) REFERENCES days(day_id))''')
+
+c.execute('''CREATE TABLE campuses(campus_id INTEGER PRIMARY KEY, campus TEXT)''')
+c.execute('''INSERT INTO campuses(campus) VALUES('University City')''')
+c.execute('''INSERT INTO campuses(campus) VALUES('Online')''')
+c.execute('''INSERT INTO campuses(campus) VALUES('Burlington County College')''')
+
 
 conn.commit()
 conn.close()

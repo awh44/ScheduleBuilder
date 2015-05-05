@@ -8,11 +8,12 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
+CAMPUSES = { u"UC": 1, u"University City": 1, u"Online": 2, u"ONL": 2, u"Burlington County College": 3, u"BCC": 3 }
 DAYS_OF_THE_WEEK = { u"S": 0, u"M": 1, u"T": 2, u"W": 3, u"R": 4, u"F": 5 }
 STOP_QUARTER = "Summer Quarter 98-99"
 
 def sanitize_string(s, dirty):
-	return s[:-len(dirty)] if s.endswith(dirty) else s	
+	return s[:-len(dirty)] if s.endswith(dirty) else s
 
 def sanitize_quarter(quarter):
 	return sanitize_string(quarter, " (View only)")
@@ -154,11 +155,11 @@ def check_detailed_course_data(driver, course_quarter_id, c):
 
 		CRN = row.find_element_by_xpath(".//*[local-name()='td'][2]/*[local-name()='a']").text
 		section = row.find_element_by_xpath(".//*[local-name()='td'][5]").text
-		campus = row.find_element_by_xpath(".//*[local-name()='td'][6]").text
+		campus = CAMPUSES[row.find_element_by_xpath(".//*[local-name()='td'][6]").text]
 		capacity = row.find_element_by_xpath(".//*[local-name()='td'][11]").text
 		taken = row.find_element_by_xpath(".//*[local-name()='td'][12]").text
 
-		c.execute("INSERT INTO course_instances(course_quarter_id, CRN, section, campus, capacity, taken, instructor_id) VALUES(?, ?, ?, ?, ?, ?, ?)", (course_quarter_id, CRN, section, campus, capacity, taken, instructor_id))
+		c.execute("INSERT INTO course_instances(course_quarter_id, CRN, section, campus_id, capacity, taken, instructor_id) VALUES(?, ?, ?, ?, ?, ?, ?)", (course_quarter_id, CRN, section, campus, capacity, taken, instructor_id))
 		instance_id = c.lastrowid
 	
 		day_rows_path = "//*[local-name()='tr' and not(./*[local-name()='td'][2]/*[local-name()='a']) and not(@align)][preceding-sibling::*[local-name()='tr' and contains(., 'NR')][1][contains(., '" + CRN + "')]] | //*[local-name()='tr' and ./*[local-name()='td'][2]/*[local-name()='a' and contains(., '" + CRN + "')]]"
