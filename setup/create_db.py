@@ -56,7 +56,7 @@ c.execute('''INSERT INTO campuses(campus) VALUES('University City')''')
 c.execute('''INSERT INTO campuses(campus) VALUES('Online')''')
 c.execute('''INSERT INTO campuses(campus) VALUES('Burlington County College')''')
 c.execute('''INSERT INTO campuses(campus) VALUES('Off Campus')''')
-
+c.execute('''INSERT INTO campuses(campus) VALUES('Sacramento')''')
 
 conn.commit()
 conn.close()

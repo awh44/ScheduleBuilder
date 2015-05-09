@@ -2,6 +2,7 @@
 
 import sqlite3
 import sys
+import time as sys_time
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -9,7 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 DAYS_OF_THE_WEEK = { u"S": 0, u"M": 1, u"T": 2, u"W": 3, u"R": 4, u"F": 5 }
 CAMPUSES = { u"UC": 1, u"University City": 1, u"Online": 2, u"ONL": 2, u"Burlington County College":
-3, u"BCC": 3, "Off Campus": 4 }
+3, u"BCC": 3, u"Off Campus": 4, u"Sacramento": 5 }
 COURSE_ROWS_XPATH = "//*[local-name()='tr' and contains(@class, 'tableHeader')]/following-sibling::*[local-name()='tr' and (@class='even' or @class='odd')]"
 
 def sanitize_string(s, dirty):
@@ -125,11 +126,20 @@ def check_detailed_course_data(driver, number, course_quarter_id, c):
 		CRN_element = instance.find_element_by_xpath("./*[local-name()='td'][6]//*[local-name()='a']")
 		CRN = CRN_element.text	
 		open_link_in_new_tab(driver, CRN_element)
+		sys_time.sleep(.2)
 		instructor = get_value_from_label(driver, "Instructor(s)")
 		instructor_id = get_instructor_id(instructor, c)
 
 		section = get_value_from_label(driver, "Section")
-		campus = CAMPUSES[get_value_from_label(driver, "Campus")]
+		campus = get_value_from_label(driver, "Campus")
+		try:
+			campus_id = CAMPUSES[campus]
+		except:
+			print "Could not find campus " + campus + "; inserting now"
+			c.execute("INSERT INTO campuses(campus) VALUES(?)", (campus,))
+			campus_id = c.lastrowid
+			CAMPUSES[campus] = campus_id
+			
 		capacity = get_value_from_label(driver, "Max Enroll")
 		taken = get_value_from_label(driver, "Enroll")
 		if taken == "CLOSED":
