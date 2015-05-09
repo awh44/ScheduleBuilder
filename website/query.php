@@ -8,7 +8,7 @@
 	Get courses where:
 	<div id="filter-rows">
 		<div class="filter-row">
-			<select class="filter-type">
+			<select class="type">
 				<option value="subject">Subject</option>
 				<option value="number">Number</option>
 				<option value="name">Name</option>
@@ -28,7 +28,7 @@
 			</span>
 			<select class="data">
 				<?php
-					echo passthru("./schedule.py");
+					echo passthru("./get_subjects.py");
 				?>
 			</select>
 			<select class="negate">

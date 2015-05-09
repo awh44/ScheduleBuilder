@@ -8,7 +8,7 @@
 	<select id="subject_select" onchange="subject_select_onchange();">
 		<option>None</option>
 		<?php
-			echo passthru("./schedule.py");
+			echo passthru("./get_subjects.py");
 		?>
 	</select>
 	<select id="number_select"></select>
