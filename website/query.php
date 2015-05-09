@@ -23,10 +23,9 @@
 				<option value="(">Left Parenthesis</option>
 				<option value=")">Right Parenthesis</option>
 			</select>
-			<select class="operator">
-				<option value="=">Equals</option>
-				<option value="like">Like</option>
-			</select>
+			<span class="operator">
+				Equals
+			</span>
 			<select class="data">
 				<?php
 					echo passthru("./schedule.py");

@@ -6,7 +6,6 @@ function append_row()
 	{
 		if ($(this).parent().nextAll().size() === 0)
 		{
-			alert("setting val.");
 			$(this).parent().prev().children(".logical").val("").change();
 		}
 		$(this).parent().remove()
@@ -19,7 +18,6 @@ function create_logical_onchange()
 	var previous = "";
 	return function (e)
 	{
-		alert("change handler called.");
 		if (this.value === "")
 		{
 			$(this).parent().nextAll().remove();
