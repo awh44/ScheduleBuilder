@@ -2,14 +2,14 @@
 
 import sqlite3
 import sys
-import time
 
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
 DAYS_OF_THE_WEEK = { u"S": 0, u"M": 1, u"T": 2, u"W": 3, u"R": 4, u"F": 5 }
-CAMPUSES = { u"UC": 1, u"University City": 1, u"Online": 2, u"ONL": 2, u"Burlington County College": 3, u"BCC": 3 }
+CAMPUSES = { u"UC": 1, u"University City": 1, u"Online": 2, u"ONL": 2, u"Burlington County College":
+3, u"BCC": 3, "Off Campus": 4 }
 COURSE_ROWS_XPATH = "//*[local-name()='tr' and contains(@class, 'tableHeader')]/following-sibling::*[local-name()='tr' and (@class='even' or @class='odd')]"
 
 def sanitize_string(s, dirty):
@@ -142,13 +142,14 @@ def check_detailed_course_data(driver, number, course_quarter_id, c):
 		times = driver.find_elements_by_xpath("//*[local-name()='tr' and contains(@class, 'tableHeader') and contains(., 'Times')]//following-sibling::*[local-name()='tr' and (contains(@class, 'even') or contains(@class, 'odd')) and not(contains(., 'Final Exam'))]")
 		for time in times:
 			time_string = time.find_element_by_xpath(".//*[local-name()='td'][3]").text
-			start, end = time_string.split(" - ")
-			startInt = convert_ampm_24hour(start)
-			endInt = convert_ampm_24hour(end)
-			days = time.find_element_by_xpath(".//*[local-name()='td'][4]").text
-			for day in days:
-				day_id = DAYS_OF_THE_WEEK[day]
-			c.execute("INSERT INTO instance_time_map(instance_id, day_id, start, end) VALUES(?, ?, ?, ?)", (instance_id, day_id, startInt, endInt))
+			if time_string.find("-") > 0:	
+				start, end = time_string.split(" - ")
+				startInt = convert_ampm_24hour(start)
+				endInt = convert_ampm_24hour(end)
+				days = time.find_element_by_xpath(".//*[local-name()='td'][4]").text
+				for day in days:
+					day_id = DAYS_OF_THE_WEEK[day]
+				c.execute("INSERT INTO instance_time_map(instance_id, day_id, start, end) VALUES(?, ?, ?, ?)", (instance_id, day_id, startInt, endInt))
 			
 			
 		close_tab(driver)

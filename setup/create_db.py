@@ -55,6 +55,7 @@ c.execute('''CREATE TABLE campuses(campus_id INTEGER PRIMARY KEY, campus TEXT)''
 c.execute('''INSERT INTO campuses(campus) VALUES('University City')''')
 c.execute('''INSERT INTO campuses(campus) VALUES('Online')''')
 c.execute('''INSERT INTO campuses(campus) VALUES('Burlington County College')''')
+c.execute('''INSERT INTO campuses(campus) VALUES('Off Campus')''')
 
 
 conn.commit()
