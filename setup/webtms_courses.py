@@ -126,7 +126,7 @@ def check_detailed_course_data(driver, number, course_quarter_id, c):
 		CRN_element = instance.find_element_by_xpath("./*[local-name()='td'][6]//*[local-name()='a']")
 		CRN = CRN_element.text	
 		open_link_in_new_tab(driver, CRN_element)
-		sys_time.sleep(.2)
+		sys_time.sleep(.4)
 		instructor = get_value_from_label(driver, "Instructor(s)")
 		instructor_id = get_instructor_id(instructor, c)
 

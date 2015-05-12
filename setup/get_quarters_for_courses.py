@@ -47,7 +47,7 @@ def check_all_terms(driver, conn):
 	global STOP_QUARTER
 
 	#Determine all of the quarters which have already been added to the database
-	checked = []
+	checked = ["Fall Quarter 14-15", "Winter Quarter 14-15", "Spring Quarter 14-15", "Summer Quarter 14-15", "Fall Quarter 13-14", "Winter Quarter 13-14", "Spring Quarter 13-14", "Summer Quarter 13-14"]
 	c = conn.cursor()
 	quartersobj = c.execute("SELECT season, year FROM quarters")
 	for quarterobj in quartersobj:
@@ -79,74 +79,71 @@ def check_all_terms(driver, conn):
 
 def check_all_subjects(driver, quarter_id, c):
 	last_sub_text = driver.find_element_by_xpath("//*[local-name()='option'][last()]").text
-	checked = []
+	index = 0
 	while True:
 		subjects = driver.find_elements_by_tag_name("option")
-		for sub in subjects:
-			#Get the name of the subject
-			if sub.get_attribute("value") != None:
-				subj_id = str(sub.get_attribute("value"))
-				sub_text = sub.text
-				if subj_id not in checked and sub_text != "":
-					#Note that this subject has now been checked
-					checked.append(subj_id)
+		sub = subjects[index]
+		#Get the name of the subject
+		if sub.get_attribute("value") != None:
+			#If looking at the previously seen subject, hold control and click it to deselect it
+			if index != 0:
+				ActionChains(driver).key_down(Keys.CONTROL).perform()
+				subjects[index - 1].click()
+				ActionChains(driver).key_up(Keys.CONTROL).perform()
 
-					#Make sure the subject is in the database, so first select it
-					subobj = c.execute("SELECT * FROM subjects WHERE subj_id = ?", (subj_id,)).fetchone()
-					if subobj == None:
-						print "Couldn't find subject " + sub.text + "; inserting now."
-						#If the subject could not be found in the database, make sure to insert it
-						c.execute("INSERT INTO subjects(subj_id, name) VALUES(?, ?)", (subj_id, sub.text))
+			subj_id = str(sub.get_attribute("value"))
+			sub_text = sub.text
 
-					#However, once found or inserted, continue selecting in the multiselect and clicking
-					sub.click()
-					driver.find_element_by_xpath("//*[@value='Course Search']").click()
-					check_all_courses(driver, subj_id, quarter_id, c)
-										
-					#Go back for the next subject
-					driver.back()
-					break
-				elif checked[len(checked) - 1] == subj_id:
-					#If looking at the previously seen subject, hold control and click it to deselect it
-					ActionChains(driver).key_down(Keys.CONTROL).perform()
-					sub.click()
-					ActionChains(driver).key_up(Keys.CONTROL).perform()
-			
-				if sub_text == last_sub_text:
-					return
+			#Make sure the subject is in the database, so first select it
+			subobj = c.execute("SELECT * FROM subjects WHERE subj_id = ?", (subj_id,)).fetchone()
+			if subobj == None:
+				print "Couldn't find subject " + sub.text + "; inserting now."
+				#If the subject could not be found in the database, make sure to insert it
+				c.execute("INSERT INTO subjects(subj_id, name) VALUES(?, ?)", (subj_id, sub.text))
+
+			#However, once found or inserted, continue selecting in the multiselect and clicking
+			sub.click()
+			driver.find_element_by_xpath("//*[@value='Course Search']").click()
+			check_all_courses(driver, subj_id, quarter_id, c)
+								
+			#Go back for the next subject
+			driver.back()
+			index += 1				
+			if sub_text == last_sub_text:
+				return
 
 def check_all_courses(driver, subj_id, quarter_id, c):
-	goal = len(driver.find_elements_by_class_name("dddefault")) / 2
-	checked = []
-	while True:
-		numbers = driver.find_elements_by_class_name("dddefault")
-		for num in numbers:
-			#Because the CSS class also includes other elements on the page, make sure the inner text is a course number
-			if re.match("[0-9]{3}", str(num.text)) != None and num.text not in checked:
-				checked.append(num.text)
+	numbers = driver.find_elements_by_class_name("dddefault")
+	total = len(numbers)
+	for index in range(total):
+		num = numbers[index]
+		#Because the CSS class also includes other elements on the page, make sure the inner text is a course number
+		if re.match("[0-9]{3}", str(num.text)) != None:
+			courseobj = get_course_obj(c, subj_id, num.text)
+			#If the course hasn't been seen before, make sure to insert it
+			if courseobj == None:
+				course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
+				c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
 				courseobj = get_course_obj(c, subj_id, num.text)
-				#If the course hasn't been seen before, make sure to insert it
-				if courseobj == None:
-					course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
-					c.execute("INSERT INTO courses(subj_id, number, name) VALUES(?, ?, ?)", (subj_id, num.text, course_name))
-					courseobj = get_course_obj(c, subj_id, num.text)
 
-				course_id = courseobj[0]
-				c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
-				course_quarter_id = c.lastrowid
-								
-				num.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']//*[local-name()='input' and @name='SUB_BTN']").click()
-				credits = check_detailed_course_data(driver, course_quarter_id, c)
-				driver.back()
-				if len(checked) == goal:
-					return
-
-				break
+			course_id = courseobj[0]
+			c.execute("INSERT INTO course_quarter_map(course_id, quarter_id) VALUES(?, ?)", (course_id, quarter_id))
+			course_quarter_id = c.lastrowid
+							
+			num.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']//*[local-name()='input' and @name='SUB_BTN']").click()
+			credits = check_detailed_course_data(driver, course_quarter_id, c)
+			driver.back()
+			numbers = driver.find_elements_by_class_name("dddefault")
 
 def check_detailed_course_data(driver, course_quarter_id, c):
 	global DAYS_OF_THE_WEEK
 
-	table = driver.find_element_by_xpath("//*[local-name()='table' and contains(@class, 'datadisplaytable')]")
+	try:
+		table = driver.find_element_by_xpath("//*[local-name()='table' and contains(@class, 'datadisplaytable')]")
+	except:
+		print "No instances for course."
+		return
+
 	course_rows = table.find_elements_by_xpath(".//*[local-name()='tr' and ./*[local-name()='td'][2]/*[local-name()='a']]")
 	for row in course_rows:
 		instructor = sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
@@ -155,11 +152,18 @@ def check_detailed_course_data(driver, course_quarter_id, c):
 
 		CRN = row.find_element_by_xpath(".//*[local-name()='td'][2]/*[local-name()='a']").text
 		section = row.find_element_by_xpath(".//*[local-name()='td'][5]").text
-		campus = CAMPUSES[row.find_element_by_xpath(".//*[local-name()='td'][6]").text]
+		campus = row.find_element_by_xpath(".//*[local-name()='td'][6]").text
+		try:
+			campus_id = CAMPUSES[campus]
+		except:
+			print "Couldn't find campus " + campus + "; inserting now."
+			c.execute("INSERT INTO campuses(campus) VALUES(?)", (campus,))
+			campus_id = c.lastrowid
+			CAMPUSES[campus] = campus_id
 		capacity = row.find_element_by_xpath(".//*[local-name()='td'][11]").text
 		taken = row.find_element_by_xpath(".//*[local-name()='td'][12]").text
 
-		c.execute("INSERT INTO course_instances(course_quarter_id, CRN, section, campus_id, capacity, taken, instructor_id) VALUES(?, ?, ?, ?, ?, ?, ?)", (course_quarter_id, CRN, section, campus, capacity, taken, instructor_id))
+		c.execute("INSERT INTO course_instances(course_quarter_id, CRN, section, campus_id, capacity, taken, instructor_id) VALUES(?, ?, ?, ?, ?, ?, ?)", (course_quarter_id, CRN, section, campus_id, capacity, taken, instructor_id))
 		instance_id = c.lastrowid
 	
 		day_rows_path = "//*[local-name()='tr' and not(./*[local-name()='td'][2]/*[local-name()='a']) and not(@align)][preceding-sibling::*[local-name()='tr' and contains(., 'NR')][1][contains(., '" + CRN + "')]] | //*[local-name()='tr' and ./*[local-name()='td'][2]/*[local-name()='a' and contains(., '" + CRN + "')]]"
@@ -179,10 +183,12 @@ def check_detailed_course_data(driver, course_quarter_id, c):
 						full_time = row.find_element_by_xpath(".//*[local-name()='td'][10]").text.strip()
 						if full_time != "TBA":
 							start_time, end_time = full_time.split("-")
+							start = convert_ampm_24hour(start_time)
+							end = convert_ampm_24hour(end_time) 
 						else:
-							start_time = end_time = "TBA"
+							start = end = "TBA"
 						for day_of_week in days_of_week:
-							c.execute("INSERT INTO instance_time_map(instance_id, day_id, start, end) VALUES(?, ?, ?, ?)", (instance_id, DAYS_OF_THE_WEEK[day_of_week], convert_ampm_24hour(start_time), convert_ampm_24hour(end_time)))
+							c.execute("INSERT INTO instance_time_map(instance_id, day_id, start, end) VALUES(?, ?, ?, ?)", (instance_id, DAYS_OF_THE_WEEK[day_of_week], start, end))
 				else:
 					print "Could not find start and end dates:", dates
 			
