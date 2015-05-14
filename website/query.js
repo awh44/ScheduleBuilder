@@ -1,6 +1,7 @@
 function append_row()
 {
 	$new_row = $(".filter-row").first().clone();
+	$new_row.children(".type").on("change", type_onchange).val("number").change();
 	$new_row.children(".logical").on("change", create_logical_onchange());
 	$new_row.children(".delete").removeAttr("disabled").on("click", function (e)
 	{
@@ -87,6 +88,6 @@ function create_logical_onchange()
 
 $(document).ready(function ()
 {
-	$(".type").on("change", type_onchange);
+	$(".type").on("change", type_onchange).change();
 	$(".logical").on("change", create_logical_onchange());
 });
