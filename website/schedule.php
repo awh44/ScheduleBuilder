@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>Drexel's Improved Master Schedule</title>
+	<title>Drexel Improved Master Schedule</title>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 	<script src="schedule.js"></script>
 </head>
