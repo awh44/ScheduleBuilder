@@ -52,4 +52,4 @@ function subject_select_onchange()
 $(document).ready(function ()
 {
 	$("#subject_select").val("None").change();
-}
+});
