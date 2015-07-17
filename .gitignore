@@ -2,3 +2,4 @@
 sql_commands
 data/start.py
 *.pyc
+tmp
