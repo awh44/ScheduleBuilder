@@ -1,4 +1,4 @@
 *.swp
 sql_commands
 data/start.py
-website/dict_factory.pyc
+*.pyc
