@@ -21,7 +21,8 @@ class SiteParser:
 	                 u"Burlington County College": u"Burlington County College",
 	                 u"Sacramento": u"Sacramento",
 	                 u"Center City": u"Center City",
-	                 u"Online": u"Online" 
+	                 u"Online": u"Online",
+	                 u"Off Campus": u"Off Campus"
 	              }
 
 	def __init__(self, database):
