@@ -5,7 +5,6 @@ from SiteParser import SiteParser
 from selenium.webdriver.common.keys import Keys
 
 class TMSParser(SiteParser):
-	COURSE_ROWS_XPATH = "//*[local-name()='tr' and contains(@class, 'tableHeader')]/following-sibling::*[local-name()='tr' and (@class='even' or @class='odd')]" 
 	def press_with_ctrl(self, key):
 		self.driver.find_element_by_tag_name("body").send_keys(Keys.CONTROL + key)
 		
@@ -37,7 +36,7 @@ class TMSParser(SiteParser):
 		self.cleanup()
 	
 	def check_all_quarters(self):
-		quarter_links = self.driver.find_elements_by_xpath("//*[local-name()='td' and contains(text(), 'Term Courses')]//ancestor::*[local-name()='table'][1]//*[local-name()='a']")
+		quarter_links = self.driver.find_elements_by_xpath("//*[local-name()='td' and contains(text(), 'Term Courses')]//ancestor::*[local-name()='table'][1]//*[local-name()='a' and not(contains(., '15-16'))]")
 		for link in quarter_links:
 			#if not self.quarter_checked(link.text):
 			quarter = link.text
@@ -49,9 +48,6 @@ class TMSParser(SiteParser):
 			self.check_all_subjects(quarter_id)
 			self.close_tab()
 				
-				#self.conn.commit()
-				#self.quarter_has_been_checked(quarter)
-
 	def check_all_subjects(self, quarter_id):
 		colleges = self.driver.find_elements_by_xpath("//*[local-name()='div' and @id='sideLeft']//*[local-name()='a']")
 		for college in colleges:
@@ -68,7 +64,7 @@ class TMSParser(SiteParser):
 			self.close_tab()
 
 	def check_all_courses(self, subject_name, quarter_id):
-		sections = self.driver.find_elements_by_xpath(self.COURSE_ROWS_XPATH)
+		sections = self.driver.find_elements_by_xpath("//*[local-name()='tr' and contains(@class, 'tableHeader')]/following-sibling::*[local-name()='tr' and (@class='even' or @class='odd')]")
 		abbr = sections[0].find_element_by_xpath("./*[local-name()='td'][1]").text
 		self.check_all_sections(sections, abbr, subject_name, quarter_id)
 
