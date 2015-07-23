@@ -26,17 +26,18 @@ CREATE TABLE Courses_Have
 
 CREATE TABLE Sections
 (
-	CRN integer PRIMARY KEY,
+	CRN integer,
+	offered_in_season text not NULL,
+	offered_in_type text not NULL,
+	offered_in_year integer not NULL,
 	section_id text,
 	capacity integer,
 	enrolled integer,
 	instance_of_subject not NULL,
 	instance_of_number not NULL,
 	taught_by text not NULL,
-	offered_in_year integer not NULL,
-	offered_in_season text not NULL,
-	offered_in_type text not NULL,
 	offered_at text not NULL,
+	PRIMARY KEY (CRN, offered_in_season, offered_in_type, offered_in_year),
 	FOREIGN KEY (instance_of_subject, instance_of_number) REFERENCES Courses_Have(instance_of_subject, instance_of_number),
 	FOREIGN KEY (taught_by) REFERENCES Instructors(name),
 	FOREIGN KEY (offered_in_year, offered_in_season, offered_in_type) REFERENCES Terms(year, season, term_type),
