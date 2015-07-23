@@ -10,19 +10,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
 class SiteParser:
-	CAMPUS_MAP = {
+	campus_map = {
 	                 u"UC": u"University City",
 	                 u"BUR": "Burlington County College",
 	                 u"SAC": u"Sacramento",
 	                 u"CC": u"Center City",
 	                 u"ONL": u"Online",
 	                 u"PTS": "PTS",
-	                 u"University City": u"University City",
-	                 u"Burlington County College": u"Burlington County College",
-	                 u"Sacramento": u"Sacramento",
-	                 u"Center City": u"Center City",
-	                 u"Online": u"Online",
-	                 u"Off Campus": u"Off Campus"
 	              }
 
 	def __init__(self, database):
@@ -30,6 +24,9 @@ class SiteParser:
 		self.c = self.conn.cursor()
 		self.setup_checked_quarters()
 		self.driver = webdriver.Firefox()
+		campusobjs = self.c.execute("SELECT name FROM Campuses")
+		for campusobj in campusobjs:
+			self.campus_map[campusobj[0]] = campusobj[0]
 
 	def cleanup(self):
 		self.driver.close()
@@ -43,6 +40,7 @@ class SiteParser:
 #				insert_string += ", ?"
 #			insert_string += ")"
 #			self.c.execute(insert_string, insert_values)
+
 	def ensure_quarter(self, quarter_id):
 		quarterobj = self.c.execute("SELECT * FROM Terms WHERE season = ? AND term_type = ? AND year = ?", quarter_id).fetchone()
 		if quarterobj == None:
@@ -84,9 +82,9 @@ WHERE
 
 	def get_actual_campus(self, campus):
 		try:
-			actual_campus = self.CAMPUS_MAP[campus]
+			actual_campus = self.campus_map[campus]
 		except:
-			self.CAMPUS_MAP[campus] = campus
+			self.campus_map[campus] = campus
 			self.c.execute("INSERT INTO Campuses(name) VALUES(?)", (campus,))
 			actual_campus = campus
 
@@ -100,7 +98,11 @@ WHERE
 			group = 1
 		else:
 			group = 2
-		return "20" + re.search("(\d\d)-(\d\d)", quarter).group(group)
+		last_two = re.search("(\d\d)-(\d\d)", quarter).group(group)
+		if int(last_two) >= 90:
+			return "19" + last_two
+
+		return "20" + last_two
 
 	def ctrl_click(self, link):
 		ActionChains(self.driver).key_down(Keys.CONTROL).perform()
