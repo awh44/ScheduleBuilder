@@ -32,15 +32,6 @@ class SiteParser:
 		self.driver.close()
 		self.conn.close()
 
-#	def ensure_object(self, table, conditions, condition_values, insert, insert_value_names, insert_values):
-#		obj = self.c.execute("SELECT * FROM " + table + " WHERE " + conditions, condition_values).fetchone()
-#		if obj == None:
-#			insert_string = "INSERT INTO " + table + "(" + insert_value_names + ")" + " VALUES(?"
-#			for _ in insert_value_names:
-#				insert_string += ", ?"
-#			insert_string += ")"
-#			self.c.execute(insert_string, insert_values)
-
 	def ensure_quarter(self, quarter_id):
 		quarterobj = self.c.execute("SELECT * FROM Terms WHERE season = ? AND term_type = ? AND year = ?", quarter_id).fetchone()
 		if quarterobj == None:
@@ -66,19 +57,22 @@ class SiteParser:
 		if timeblockobj == None:
 			self.c.execute("INSERT INTO TimeBlocks(day, start_time, end_time) VALUES(?, ?, ?)", (day, start_time, end_time))
 
-	def ensure_meetsat(self, CRN, day, start_time, end_time):
+	def ensure_meetsat(self, CRN, quarter_id, day, start_time, end_time):
 		meetsatobj = self.c.execute("SELECT * FROM Meets_At WHERE CRN = ? AND day = ? AND start_time = ? AND end_time = ?", (CRN, day, start_time, end_time)).fetchone()
 		if meetsatobj == None:
-			self.c.execute("INSERT INTO Meets_At(CRN, day, start_time, end_time) VALUES(?, ?, ?, ?)", (CRN, day, start_time, end_time))
+			self.c.execute("INSERT INTO Meets_At(CRN, offered_in_season, offered_in_type, offered_in_year, day, start_time, end_time) VALUES(?, ?, ?, ?)", (CRN,) + quarter_id + (day, start_time, end_time))
 
-	def get_sections_for_subject_in_term(self, subject, quarter_id):
+	def get_sections_for_subject_in_term(self, subject, quarter_id, use_abbr = False):
+		to_check = "abbr" if use_abbr else "subject"
 		return self.c.execute("""SELECT *
 FROM
 	Courses_Have CH, Sections S
 WHERE
-	CH.subject = ? AND CH.abbr = S.instance_of_subject AND
+	CH.""" + to_check + """ = ? AND CH.abbr = S.instance_of_subject AND
 	S.offered_in_season = ? AND S.offered_in_type = ? AND S.offered_in_year = ?""", (subject,) + quarter_id)
-	
+
+	def subject_checked_in_term(self, subject, quarter_id, use_abbr = False):
+		return self.get_sections_for_subject_in_term(subject, quarter_id, use_abbr).fetchone() == None
 
 	def get_actual_campus(self, campus):
 		try:
