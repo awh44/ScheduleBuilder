@@ -62,6 +62,9 @@ class SiteParser:
 		if meetsatobj == None:
 			self.c.execute("INSERT INTO Meets_At(CRN, offered_in_season, offered_in_type, offered_in_year, day, start_time, end_time) VALUES(?, ?, ?, ?, ?, ?, ?)", (CRN,) + quarter_id + (day, start_time, end_time))
 
+	def insert_section(self, CRN, section, capacity, enrolled, abbr, course_number, instructor, quarter_id, campus):
+		self.c.execute("INSERT INTO Sections(CRN, section_id, capacity, enrolled, instance_of_subject, instance_of_number, taught_by, offered_in_season, offered_in_type, offered_in_year, offered_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (CRN, section, capacity, enrolled, abbr, course_number, instructor) + quarter_id + (campus,))
+
 	def get_sections_for_subject_in_term(self, subject, quarter_id, use_abbr = False):
 		to_check = "abbr" if use_abbr else "subject"
 		return self.c.execute("""SELECT *
