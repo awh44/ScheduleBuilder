@@ -60,7 +60,7 @@ class SiteParser:
 	def ensure_meetsat(self, CRN, quarter_id, day, start_time, end_time):
 		meetsatobj = self.c.execute("SELECT * FROM Meets_At WHERE CRN = ? AND day = ? AND start_time = ? AND end_time = ?", (CRN, day, start_time, end_time)).fetchone()
 		if meetsatobj == None:
-			self.c.execute("INSERT INTO Meets_At(CRN, offered_in_season, offered_in_type, offered_in_year, day, start_time, end_time) VALUES(?, ?, ?, ?)", (CRN,) + quarter_id + (day, start_time, end_time))
+			self.c.execute("INSERT INTO Meets_At(CRN, offered_in_season, offered_in_type, offered_in_year, day, start_time, end_time) VALUES(?, ?, ?, ?, ?, ?, ?)", (CRN,) + quarter_id + (day, start_time, end_time))
 
 	def get_sections_for_subject_in_term(self, subject, quarter_id, use_abbr = False):
 		to_check = "abbr" if use_abbr else "subject"

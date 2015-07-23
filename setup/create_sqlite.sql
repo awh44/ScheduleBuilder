@@ -80,10 +80,13 @@ CREATE TABLE TimeBlocks
 CREATE TABLE Meets_At
 (
 	CRN integer,
+	offered_in_season text,
+	offered_in_type text,
+	offered_in_year integer,
 	day text,
 	start_time text,
 	end_time text,
 	PRIMARY KEY (CRN, day, start_time, end_time),
-	FOREIGN KEY (CRN) REFERENCES Sections (CRN),
+	FOREIGN KEY (CRN, offered_in_season, offered_in_type, offered_in_year) REFERENCES Sections (CRN, offered_in_season, offered_in_type, offered_in_year),
 	FOREIGN KEY (day, start_time, end_time) REFERENCES TimeBlocks (day, start_time, end_time)
 );

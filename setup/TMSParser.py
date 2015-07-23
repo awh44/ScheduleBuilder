@@ -36,9 +36,8 @@ class TMSParser(SiteParser):
 		self.cleanup()
 	
 	def check_all_quarters(self):
-		quarter_links = self.driver.find_elements_by_xpath("//*[local-name()='td' and contains(text(), 'Term Courses')]//ancestor::*[local-name()='table'][1]//*[local-name()='a' and not(contains(., '15-16'))]")
+		quarter_links = self.driver.find_elements_by_xpath("//*[local-name()='td' and contains(text(), 'Term Courses')]//ancestor::*[local-name()='table'][1]//*[local-name()='a' and not(contains(., '15-16') or contains(., 'Quarter 14-15'))]")
 		for link in quarter_links:
-			#if not self.quarter_checked(link.text):
 			quarter = link.text
 			season, term_type, _ = quarter.split()
 			year = self.get_year_from_quarter(quarter)
@@ -92,10 +91,10 @@ class TMSParser(SiteParser):
 			campus = self.get_actual_campus(campus)
 
 			self.c.execute("INSERT INTO Sections(CRN, section_id, capacity, enrolled, instance_of_subject, instance_of_number, taught_by, offered_in_season, offered_in_type, offered_in_year, offered_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (CRN, section, capacity, enrolled, abbr, course_number, instructor) + quarter_id + (campus,))
-			self.check_all_times_for_section(CRN)
+			self.check_all_times_for_section(CRN, quarter_id)
 			self.close_tab()
 
-	def check_all_times_for_section(self, CRN):
+	def check_all_times_for_section(self, CRN, quarter_id):
 		times = self.driver.find_elements_by_xpath("//*[local-name()='tr' and contains(@class, 'tableHeader') and contains(., 'Times')]//following-sibling::*[local-name()='tr' and (contains(@class, 'even') or contains(@class, 'odd')) and not(contains(., 'Final Exam'))]")
 		for time in times:
 			time_string = time.find_element_by_xpath(".//*[local-name()='td'][3]").text
@@ -104,4 +103,4 @@ class TMSParser(SiteParser):
 				days = time.find_element_by_xpath(".//*[local-name()='td'][4]").text
 				for day in days:
 					self.ensure_timeblock(day, start, end)
-					self.ensure_meetsat(CRN, day, start, end)
+					self.ensure_meetsat(CRN, quarter_id, day, start, end)
