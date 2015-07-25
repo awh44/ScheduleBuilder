@@ -5,7 +5,7 @@ from SiteParser import SiteParser
 class DrexelOneParser(SiteParser):
 	STOP_QUARTER = "Summer Quarter 98-99"
 	SUBJECTS_XPATH = "//*[local-name()='select' and @id='subj_id']/*[local-name()='option']"
-	COURSE_NUMBERS_XPATH = "//*[@class='dddefault']"
+	COURSE_NUMBERS_XPATH = "//*[@class='dddefault' and @width='10%']"
 	CRN_XPATH = "./*[local-name()='td'][2]/*[local-name()='a']" 
 	
 	def __init__(self, database, username, password):
@@ -54,11 +54,11 @@ class DrexelOneParser(SiteParser):
 		index = 0
 		while True:
 			dropdown = self.driver.find_element_by_name("p_term")
-			options = dropdown.find_elements_by_xpath(".//*[local-name()='option' and not(contains(., 'None') or contains(., 'Continuing'))]")
+			options = dropdown.find_elements_by_xpath(".//*[local-name()='option' and not(contains(., 'None') or contains(., 'Continuing') or contains(., 'Semester') or contains(., '15-16') or contains(., '14-15') or contains(., '13-14'))]")
 			opt = options[index]
 			quarter = self.sanitize_quarter(opt.text)
 			season, term_type, _ = quarter.split()
-			year = self.get_year_from_term(quarter)
+			year = self.get_year_from_quarter(quarter)
 			quarter_id = (season, term_type, year)
 			self.ensure_quarter(quarter_id)
 
@@ -75,7 +75,7 @@ class DrexelOneParser(SiteParser):
 		last_sub_text = self.get_last_text(self.SUBJECTS_XPATH)
 		index = 0
 		while True:
-			subjects = self.driver.find_elements_by_tag_name("//*[local-name()='select' and @id='subj_id']/*[local-name()='option']")
+			subjects = self.driver.find_elements_by_xpath(self.SUBJECTS_XPATH)
 			sub = subjects[index]
 			#Get the name and the abbreviation of the subject
 			subject_name = sub.text
@@ -107,7 +107,7 @@ class DrexelOneParser(SiteParser):
 		last_num_text = self.get_last_text(self.COURSE_NUMBERS_XPATH)
 		index = 0
 		while True:
-			numbers = self.driver.find_elements_by_xpath("//*[@class='dddefault' and @width='10%']")
+			numbers = self.driver.find_elements_by_xpath(self.COURSE_NUMBERS_XPATH)
 			num = numbers[index]
 			course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
 							
@@ -124,6 +124,7 @@ class DrexelOneParser(SiteParser):
 			table = self.driver.find_element_by_xpath("//*[local-name()='table' and contains(@class, 'datadisplaytable')]")
 		except:
 			self.ensure_course(abbr, num, course_name, None, None, subject_name)
+			self.ensure_offered_in_term(abbr, num, quarter_id)
 			print "No instances for course."
 		return
 
@@ -143,6 +144,7 @@ class DrexelOneParser(SiteParser):
 					credits = None
 				
 				self.ensure_course(abbr, num, course_name, None, credits, subject_name)
+				self.ensure_offered_in_term(abbr, num, quarter_id)
 				
 				instructor = sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
 				self.ensure_instructor(instructor)
