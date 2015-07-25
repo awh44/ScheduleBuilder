@@ -84,7 +84,7 @@ WHERE
 	S.offered_in_season = ? AND S.offered_in_type = ? AND S.offered_in_year = ?""", (subject,) + quarter_id)
 
 	def subject_checked_in_term(self, subject, quarter_id, use_abbr = False):
-		return self.get_sections_for_subject_in_term(subject, quarter_id, use_abbr).fetchone() == None
+		return self.get_sections_for_subject_in_term(subject, quarter_id, use_abbr).fetchone() != None
 
 	def get_actual_campus(self, campus):
 		try:
