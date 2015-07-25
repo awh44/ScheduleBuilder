@@ -14,7 +14,7 @@ def is_tms_parser(parser_type):
 	return parser_type == "tms"
 
 def create_one_parser(username, password):
-	return DrexelOneParser("one_courses_500.db", username, password)
+	return DrexelOneParser("courses_500.db", username, password)
 
 def create_tms_parser():
 	return TMSParser("courses_500.db")

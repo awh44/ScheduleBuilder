@@ -5,7 +5,7 @@ from SiteParser import SiteParser
 class DrexelOneParser(SiteParser):
 	STOP_QUARTER = "Summer Quarter 98-99"
 	SUBJECTS_XPATH = "//*[local-name()='select' and @id='subj_id']/*[local-name()='option']"
-	COURSE_NUMBERS_XPATH = "//*[@class='dddefault' and @width='10%']"
+	COURSE_ROWS_XPATH = "//*[local-name()='tr' and .//*[local-name()='input' and @value='View Sections']]"
 	CRN_XPATH = "./*[local-name()='td'][2]/*[local-name()='a']" 
 	
 	def __init__(self, database, username, password):
@@ -13,11 +13,21 @@ class DrexelOneParser(SiteParser):
 		self.username = username
 		self.password = password
 
+	def subject_checked_in_term(self, abbr, quarter_id):
+		obj = self.c.execute("""SELECT *
+FROM
+	Course_Offered_In_Term OI, Terms T
+WHERE
+	OI.season = T.season AND OI.term_type = T.term_type AND OI.year = T.year AND
+	OI.subject = ? AND
+	OI.season = ? AND OI.term_type = ? AND OI.year = ?""", (abbr,) + quarter_id).fetchone()
+		return obj != None
+
 	def sanitize_quarter(self, quarter):
 		return self.sanitize_string(quarter, " (View only)")
 
 	def sanitize_instructor(self, instructor):
-		return self.sanitize_string(instructor, " (P)")
+		return instructor.relace(" (P)", "")
 
 	def switch_window(self):
 		self.driver.close()
@@ -74,16 +84,19 @@ class DrexelOneParser(SiteParser):
 	def check_all_subjects(self, quarter_id):
 		last_sub_text = self.get_last_text(self.SUBJECTS_XPATH)
 		index = 0
+		deselect_index = -1
 		while True:
 			subjects = self.driver.find_elements_by_xpath(self.SUBJECTS_XPATH)
 			sub = subjects[index]
 			#Get the name and the abbreviation of the subject
 			subject_name = sub.text
 			abbr = str(sub.get_attribute("value"))
-			if not self.subject_checked_in_term(abbr, quarter_id, True):
-				#Deselect the previous subject
-				if index != 0:
-					self.ctrl_click(subjects[index - 1])
+			if not self.subject_checked_in_term(abbr, quarter_id):
+				#Deselect the previous subject, if needed, and also indicate that the current subject
+				#must be deselected
+				if deselect_index > 0:
+					self.ctrl_click(subjects[deselect_index])
+				deselect_index = index
 
 				#Make sure the subject is in the database
 				self.ensure_subject_by_abbr(subject_name, abbr)
@@ -104,29 +117,26 @@ class DrexelOneParser(SiteParser):
 				return
 
 	def check_all_courses(self, abbr, subject_name, quarter_id):
-		last_num_text = self.get_last_text(self.COURSE_NUMBERS_XPATH)
-		index = 0
-		while True:
-			numbers = self.driver.find_elements_by_xpath(self.COURSE_NUMBERS_XPATH)
-			num = numbers[index]
+		numbers = self.driver.find_elements_by_xpath(self.COURSE_ROWS_XPATH)
+		for index in range(len(numbers)):
+			num = numbers[index].find_element_by_xpath("./*[local-name()='td'][1]")
+			numtext = num.text
 			course_name = num.find_element_by_xpath(".//following-sibling::*[local-name()='td']").text
 							
 			num.find_element_by_xpath(".//following-sibling::*[local-name()='td']/*[local-name()='form']//*[local-name()='input' and @name='SUB_BTN']").click()
-			self.check_all_sections(abbr, num.text, subject_name, course_name, quarter_id)
+			self.check_all_sections(abbr, numtext, subject_name, course_name, quarter_id)
 			self.driver.back()
+			numbers = self.driver.find_elements_by_xpath(self.COURSE_ROWS_XPATH)
 
-			index += 1
-			if num.text == last_num_text:
-				return
 
 	def check_all_sections(self, abbr, num, subject_name, course_name, quarter_id):
 		try:
 			table = self.driver.find_element_by_xpath("//*[local-name()='table' and contains(@class, 'datadisplaytable')]")
 		except:
 			self.ensure_course(abbr, num, course_name, None, None, subject_name)
-			self.ensure_offered_in_term(abbr, num, quarter_id)
+			self.ensure_course_offered_in_term(abbr, num, quarter_id)
 			print "No instances for course."
-		return
+			return
 
 		#The actual course rows are the ones which have the CRN links
 		course_rows = table.find_elements_by_xpath(".//*[local-name()='tr' and not(./*[local-name()='th'])]")
@@ -144,21 +154,21 @@ class DrexelOneParser(SiteParser):
 					credits = None
 				
 				self.ensure_course(abbr, num, course_name, None, credits, subject_name)
-				self.ensure_offered_in_term(abbr, num, quarter_id)
-				
-				instructor = sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
+				self.ensure_course_offered_in_term(abbr, num, quarter_id)
+
+				instructor = self.sanitize_instructor(row.find_element_by_xpath(".//*[local-name()='td'][20]").text)
 				self.ensure_instructor(instructor)
 				CRN = CRN_element.text
 				section = row.find_element_by_xpath(".//*[local-name()='td'][5]").text
 				campus = self.get_actual_campus(row.find_element_by_xpath(".//*[local-name()='td'][6]").text)
 				capacity = row.find_element_by_xpath(".//*[local-name()='td'][11]").text
 				enrolled = row.find_element_by_xpath(".//*[local-name()='td'][12]").text
-				self.insert_section(CRN, section, capacity, enrolled, abbr, course_number, instructor, quarter_id, campus)
-					
-			else:
-				self.ensure_times_for_section(CRN, quarter_id, row)
+				self.insert_section(CRN, section, capacity, enrolled, abbr, num, instructor, quarter_id, campus)
 
-	def check_all_times_for_section(self, CRN, quarter_id, day_row):
+			self.ensure_times_for_section(CRN, quarter_id, row)
+					
+
+	def ensure_times_for_section(self, CRN, quarter_id, day_row):
 		try:
 			days_of_week = day_row.find_element_by_xpath(".//*[local-name()='td'][9]").text.strip()
 		except:
@@ -179,4 +189,4 @@ class DrexelOneParser(SiteParser):
 						start, end = time.split("-")
 						for day_of_week in days_of_week:
 							self.ensure_timeblock(day_of_week, start, end)
-							self.ensure_meetsat(CRN, day, start, end)
+							self.ensure_meetsat(CRN, quarter_id, day_of_week, start, end)

@@ -67,7 +67,7 @@ class SiteParser:
 FROM
 	Course_Offered_In_Term
 WHERE
-	subject = ?, num = ?, season = ?, term_type = ?, year = ?""", (subject, num) + quarter_id).fetchone()
+	subject = ? AND num = ? AND season = ? AND term_type = ? AND year = ?""", (subject, num) + quarter_id).fetchone()
 		if offeredinobj == None:
 			self.c.execute("INSERT INTO Course_Offered_In_Term(subject, num, season, term_type, year) VALUES(?, ?, ?, ?, ?)", (subject, num) + quarter_id)
 
