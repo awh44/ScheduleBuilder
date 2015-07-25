@@ -33,8 +33,8 @@ CREATE TABLE Sections
 	section_id text,
 	capacity integer,
 	enrolled integer,
-	instance_of_subject not NULL,
-	instance_of_number not NULL,
+	instance_of_subject text not NULL,
+	instance_of_number number not NULL,
 	taught_by text not NULL,
 	offered_at text not NULL,
 	PRIMARY KEY (CRN, offered_in_season, offered_in_type, offered_in_year),
@@ -90,3 +90,10 @@ CREATE TABLE Meets_At
 	FOREIGN KEY (CRN, offered_in_season, offered_in_type, offered_in_year) REFERENCES Sections (CRN, offered_in_season, offered_in_type, offered_in_year),
 	FOREIGN KEY (day, start_time, end_time) REFERENCES TimeBlocks (day, start_time, end_time)
 );
+
+--CREATE TABLE Course_Offered_In_Quarter
+--(
+	--subject text,
+	--num integer,
+	
+--);
