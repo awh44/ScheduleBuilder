@@ -6,6 +6,7 @@ DROP TABLE Campuses;
 DROP TABLE Terms;
 DROP TABLE TimeBlocks;
 DROP TABLE Meets_At;
+DROP TABLE Course_Offered_In_Term;
 
 CREATE TABLE Subjects
 (
@@ -91,9 +92,14 @@ CREATE TABLE Meets_At
 	FOREIGN KEY (day, start_time, end_time) REFERENCES TimeBlocks (day, start_time, end_time)
 );
 
---CREATE TABLE Course_Offered_In_Quarter
---(
-	--subject text,
-	--num integer,
-	
---);
+CREATE TABLE Course_Offered_In_Term
+(
+	subject text,
+	num integer,
+	season text,
+	term_type text,
+	year integer,
+	PRIMARY KEY (subject, num, season, term_type, year),
+	FOREIGN KEY (subject, num) REFERENCES Courses_Have(abbr, num),
+	FOREIGN KEY (season, term_type, year) REFERENCES Terms(season, term_type, year)
+);
