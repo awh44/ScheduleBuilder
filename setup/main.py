@@ -14,9 +14,9 @@ def is_tms_parser(parser_type):
 	return parser_type == "tms"
 
 def create_one_parser(username, password):
-	return DrexelOneParser("one_courses_500.db", argv[2], argv[3])
+	return DrexelOneParser("one_courses_500.db", username, password)
 
-def create_tms_parser()
+def create_tms_parser():
 	return TMSParser("courses_500.db")
 
 def main(argv):
@@ -24,12 +24,12 @@ def main(argv):
 		print "Supply which site should be parsed, either 'one' or 'tms', as a command line argument."
 		return 1
 
-	if is_one_parser(argv[1])
+	if is_one_parser(argv[1]):
 		if len(argv) < 4:
 			print "Please supply a username and password as command line arguments."
 			return 1
 		parser = create_one_parser(argv[2], argv[3])
-	elif is_tms_parser(tms)
+	elif is_tms_parser(tms):
 		parser = create_tms_parser()
 
 	else:
