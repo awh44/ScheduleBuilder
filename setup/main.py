@@ -29,7 +29,7 @@ def main(argv):
 			print "Please supply a username and password as command line arguments."
 			return 1
 		parser = create_one_parser(argv[2], argv[3])
-	elif is_tms_parser(tms):
+	elif is_tms_parser(argv[1]):
 		parser = create_tms_parser()
 
 	else:
